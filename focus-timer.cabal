@@ -31,9 +31,10 @@ executable focus-timer
     -- other-extensions:
     build-depends:
         base ^>=4.13.0.0
-        , gi-gtk
-        , gi-gtk-declarative
-        , gi-gtk-declarative-app-simple
+        , text ^>=1.2
+        , gi-gtk ^>=3.0
+        , gi-gtk-declarative ^>=0.7.1
+        , gi-gtk-declarative-app-simple ^>=0.7.1
     hs-source-dirs:   app
     default-language: Haskell2010
     ghc-options: -threaded
