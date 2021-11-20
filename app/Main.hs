@@ -7,7 +7,6 @@ import Control.Monad ( void )
 import Control.Concurrent ( threadDelay )
 import Data.Functor ( ($>) )
 import Data.Text as Text
-import Data.String ( IsString (..) )
 import Pipes.Prelude ( repeatM )
 
 import GI.Gtk ( Box (..)
@@ -22,30 +21,7 @@ import GI.Gtk( entryGetText )
 import GI.Gtk.Declarative
 import GI.Gtk.Declarative.App.Simple
 
-{- Defaults -}
-minute :: Int
-minute = 60
-
-breakTime :: Int
-breakTime = minute * 5
-
-workTime :: Int
-workTime = minute * 20
-
-{- Goal Type -}
-newtype Goal = Goal Text.Text
-
-instance Show Goal where
-    show (Goal t) = Text.unpack t
-
-instance IsString Goal where
-    fromString s = Goal . Text.pack $ s
-
-{- CountDown Type -}
-newtype CountDown = CountDown Int
-
-countDownMinutes :: CountDown -> Text.Text
-countDownMinutes ( CountDown x ) = Text.pack . show $ x
+import Helpers
 
 {- Application State -}
 
@@ -61,8 +37,6 @@ initialState' = WhatsNext ""
 
 data Event = StartWorking Goal | UpdateGoal Goal | NewGoal | Tick | Quit
 
-oneSecond :: Int
-oneSecond = 1000000
 tickEverySecond = repeatM $ threadDelay oneSecond $> Tick
 
 
