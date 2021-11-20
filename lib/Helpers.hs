@@ -29,6 +29,15 @@ instance IsString Goal where
 newtype CountDown = CountDown Int
 
 countDownMinutes :: CountDown -> Text.Text
-countDownMinutes ( CountDown x ) = Text.pack . show $ x
+countDownMinutes ( CountDown x ) = Text.pack timeLeft where
+    minutesLeft = abs x `div` minute
+    minutesString =
+        if x < 0 then "-" <> show minutesLeft
+                 else show minutesLeft
 
+    secondsLeft = abs x `rem` minute
+    secondString =
+        if secondsLeft < 10 then "0" <> show secondsLeft
+                  else show secondsLeft
 
+    timeLeft = minutesString <> ":" <> secondString

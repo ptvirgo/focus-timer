@@ -15,4 +15,5 @@ tests = testGroup "Tests"
     , testCase "countDownMinutes 5" $ "5:00" @=? ( countDownMinutes $ CountDown (5 * minute) )
     , testCase "countDownMinutes 3:47" $ "3:47" @=? ( countDownMinutes $ CountDown (3 * minute + 47) )
     , testCase "countDownMinutes -3:47" $ "-3:47" @=? ( countDownMinutes $ CountDown (- 1 * (3 * minute + 47)) )
+    , testCase "countDownMinutes -3:47" $ "-6:02" @=? ( countDownMinutes $ CountDown (- 1 * (6 * minute + 2)) )
     ]
