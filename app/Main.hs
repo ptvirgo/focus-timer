@@ -22,19 +22,17 @@ import GI.Gtk( entryGetText )
 import GI.Gtk.Declarative
 import GI.Gtk.Declarative.App.Simple
 
-
-oneSecond :: Int
-oneSecond = 1000000
-
+{- Defaults -}
 minute :: Int
 minute = 60
-
-workTime :: Int
-workTime = minute * 20
 
 breakTime :: Int
 breakTime = minute * 5
 
+workTime :: Int
+workTime = minute * 20
+
+{- Goal Type -}
 newtype Goal = Goal Text.Text
 
 instance Show Goal where
@@ -43,33 +41,77 @@ instance Show Goal where
 instance IsString Goal where
     fromString s = Goal . Text.pack $ s
 
-data State = WhatsNext Goal
-data Event = StartWorking Goal | UpdateGoal Goal | Tick | Quit
+{- CountDown Type -}
+newtype CountDown = CountDown Int
+
+countDownMinutes :: CountDown -> Text.Text
+countDownMinutes ( CountDown x ) = Text.pack . show $ x
+
+{- Application State -}
+
+data State =
+    WhatsNext Goal
+    | Working Goal CountDown
+
+initialState' :: State
+initialState' = WhatsNext ""
+
+
+{- Events -}
+
+data Event = StartWorking Goal | UpdateGoal Goal | NewGoal | Tick | Quit
+
+oneSecond :: Int
+oneSecond = 1000000
+tickEverySecond = repeatM $ threadDelay oneSecond $> Tick
+
+
+{- Update -}
 
 update' :: State -> Event -> Transition State Event
-update' (WhatsNext _) (UpdateGoal goal) = Transition (WhatsNext goal) (return Nothing)
+update' _ (StartWorking goal) = Transition (Working goal ( CountDown workTime )) (return Nothing)
+update' _ NewGoal = Transition initialState' (return Nothing) 
 update' _ Quit = Exit
+
+update' (WhatsNext _) (UpdateGoal goal) = Transition (WhatsNext goal) (return Nothing)
+update' (Working g (CountDown x)) Tick = Transition (Working g (CountDown $ x - 1 )) (return Nothing)
+
 update' s _ = Transition s (return Nothing)
--- update' s Tick = Transition (s { seconds = seconds s + 1 } ) (return Nothing)
+
+
+{- Viewers -}
 
 view' :: State -> AppView Window Event
 view' s = bin Window [ #title := "Focus Timer" , on #deleteEvent (const (True, Quit)) ] appState where
     appState = case s of
         WhatsNext goal -> viewWhatsNext goal
+        Working goal countdown -> viewWorking goal countdown
 
 viewWhatsNext :: Goal -> Widget Event
 viewWhatsNext goal = container Box [ #orientation := OrientationVertical ]
-  [ widget Label [ #label := "What's next?" ]
-  , widget Entry [ onM #changed (\evBox -> UpdateGoal . Goal <$> entryGetText evBox) ]
-  , widget Button [#label := "Quit", on #clicked Quit]
-  ]
+    [ widget Label [ #label := "What's next?" ]
+    , widget Entry [ onM #changed (\evBox -> UpdateGoal . Goal <$> entryGetText evBox) ]
+    , container Box
+          [ #orientation := OrientationHorizontal ]
+          [ widget Button [ #label := "Start", on #clicked $ StartWorking goal ]
+          ]
+    ]
 
-timer = repeatM $ threadDelay oneSecond $> Tick
+viewWorking :: Goal -> CountDown -> Widget Event
+viewWorking goal countDown = container Box [ #orientation := OrientationVertical ]
+    [ widget Label [ #label := ( Text.pack . show $ goal )]
+    , widget Label [ #label := countDownMinutes countDown ]
+    , container Box
+        [ #orientation := OrientationHorizontal ]
+        [ widget Button [ #label := "switch", on #clicked NewGoal ]
+        ]
+    ]
 
+{- Main -}
 main :: IO ()
 main = void $ run App { view = view'
                , update = update'
-               , inputs = [timer]
-               , initialState = WhatsNext ""
+               , inputs = [tickEverySecond]
+               , initialState = initialState'
                }
 
