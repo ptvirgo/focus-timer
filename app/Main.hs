@@ -35,19 +35,19 @@ workTime = minute * 20
 breakTime :: Int
 breakTime = minute * 5
 
-newtype Task = Task Text.Text
+newtype Goal = Goal Text.Text
 
-instance Show Task where
-    show (Task t) = Text.unpack t
+instance Show Goal where
+    show (Goal t) = Text.unpack t
 
-instance IsString Task where
-    fromString s = Task . Text.pack $ s
+instance IsString Goal where
+    fromString s = Goal . Text.pack $ s
 
-data State = WhatsNext Task
-data Event = StartWorking Task | UpdateTask Task | Tick | Quit
+data State = WhatsNext Goal
+data Event = StartWorking Goal | UpdateGoal Goal | Tick | Quit
 
 update' :: State -> Event -> Transition State Event
-update' (WhatsNext _) (UpdateTask task) = Transition (WhatsNext task) (return Nothing)
+update' (WhatsNext _) (UpdateGoal goal) = Transition (WhatsNext goal) (return Nothing)
 update' _ Quit = Exit
 update' s _ = Transition s (return Nothing)
 -- update' s Tick = Transition (s { seconds = seconds s + 1 } ) (return Nothing)
@@ -55,12 +55,12 @@ update' s _ = Transition s (return Nothing)
 view' :: State -> AppView Window Event
 view' s = bin Window [ #title := "Focus Timer" , on #deleteEvent (const (True, Quit)) ] appState where
     appState = case s of
-        WhatsNext task -> viewWhatsNext task
+        WhatsNext goal -> viewWhatsNext goal
 
-viewWhatsNext :: Task -> Widget Event
-viewWhatsNext task = container Box [ #orientation := OrientationVertical ]
+viewWhatsNext :: Goal -> Widget Event
+viewWhatsNext goal = container Box [ #orientation := OrientationVertical ]
   [ widget Label [ #label := "What's next?" ]
-  , widget Entry [ onM #changed (\evBox -> UpdateTask . Task <$> entryGetText evBox) ]
+  , widget Entry [ onM #changed (\evBox -> UpdateGoal . Goal <$> entryGetText evBox) ]
   , widget Button [#label := "Quit", on #clicked Quit]
   ]
 
