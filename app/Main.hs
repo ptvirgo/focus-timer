@@ -28,6 +28,7 @@ import Helpers
 data State =
     WhatsNext Goal
     | Working Goal CountDown
+    | Breaking CountDown
 
 initialState' :: State
 initialState' = WhatsNext ""
@@ -35,7 +36,7 @@ initialState' = WhatsNext ""
 
 {- Events -}
 
-data Event = StartWorking Goal | UpdateGoal Goal | NewGoal | Tick | Quit
+data Event = StartWorking Goal | UpdateGoal Goal | NewGoal | StartBreak | Tick | Quit
 
 tickEverySecond = repeatM $ threadDelay oneSecond $> Tick
 
@@ -45,13 +46,19 @@ tickEverySecond = repeatM $ threadDelay oneSecond $> Tick
 update' :: State -> Event -> Transition State Event
 update' _ (StartWorking goal) = Transition (Working goal ( CountDown workTime )) (return Nothing)
 update' _ NewGoal = Transition initialState' (return Nothing) 
+update' _ StartBreak = Transition (Breaking . CountDown $ breakTime) (return Nothing)
 update' _ Quit = Exit
 
 update' (WhatsNext _) (UpdateGoal goal) = Transition (WhatsNext goal) (return Nothing)
-update' (Working g (CountDown x)) Tick = Transition (Working g (CountDown $ x - 1 )) (return Nothing)
+update' (Working g c) Tick = Transition (Working g . decr $ c) (return Nothing)
+update' (Breaking c) Tick = decrBreak c
 
 update' s _ = Transition s (return Nothing)
 
+decrBreak :: CountDown -> Transition State Event
+decrBreak c@(CountDown x) = Transition (Breaking . decr $ c) (return event) where
+    event = if x > 1 then Nothing
+                     else Just NewGoal
 
 {- Viewers -}
 
@@ -59,7 +66,8 @@ view' :: State -> AppView Window Event
 view' s = bin Window [ #title := "Focus Timer" , on #deleteEvent (const (True, Quit)) ] appState where
     appState = case s of
         WhatsNext goal -> viewWhatsNext goal
-        Working goal countdown -> viewWorking goal countdown
+        Working goal countDown -> viewWorking goal countDown
+        Breaking countDown -> viewBreaking countDown
 
 viewWhatsNext :: Goal -> Widget Event
 viewWhatsNext goal = container Box [ #orientation := OrientationVertical ]
@@ -78,6 +86,17 @@ viewWorking goal countDown = container Box [ #orientation := OrientationVertical
     , container Box
         [ #orientation := OrientationHorizontal ]
         [ widget Button [ #label := "switch", on #clicked NewGoal ]
+        , widget Button [ #label := "break", on #clicked StartBreak ]
+        ]
+    ]
+
+viewBreaking :: CountDown -> Widget Event
+viewBreaking countDown = container Box [ #orientation := OrientationVertical ]
+    [ widget Label [ #label := "Break" ]
+    , widget Label [ #label := countDownMinutes countDown ]
+    , container Box
+        [ #orientation := OrientationHorizontal ]
+        [ widget Button [ #label := "finish", on #clicked NewGoal ]
         ]
     ]
 
