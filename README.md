@@ -11,7 +11,3 @@ Minimal pomodoro-style timer.
 2. From the base dir of this repo: `$ cabal install focus-timer`
 
 You'll have to run the executable more or less directly.
-
-## Todo
-
-- Log activities.
