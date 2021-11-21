@@ -19,7 +19,7 @@ maintainer:         mailbox@pablovirgo.com
 -- A copyright notice.
 -- copyright:
 -- category:
-extra-source-files: CHANGELOG.md
+-- extra-source-files: CHANGELOG.md
 
 library helpers
     exposed-modules: Helpers

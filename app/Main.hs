@@ -15,7 +15,7 @@ import Pipes.Prelude ( repeatM )
 import GI.Gtk ( Box (..)
               , Button (..)
               , Entry (..)
-              , entryGetText 
+              , entryGetText
               , Grid (..)
               , Label (..)
               , Window (..)
@@ -72,7 +72,7 @@ decrBreak c@(CountDown x) = Transition (Breaking . decr $ c) (return event) wher
 {- Viewers -}
 
 view' :: State -> AppView Window Event
-view' s = bin Window [ #title := "Focus Timer" , on #deleteEvent (const (True, Quit)), #widthRequest := 300, #heightRequest := 100, #resizable := False ] appState where
+view' s = bin Window [ #title := "Focus Timer" , on #deleteEvent (const (True, Quit)), #widthRequest := 400, #heightRequest := 100 ] appState where
     appState = case s of
         WhatsNext goal -> viewWhatsNext goal
         Working goal countDown -> viewWorking goal countDown
