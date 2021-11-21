@@ -11,7 +11,7 @@ breakTime :: Int
 breakTime = minute * 5
 
 workTime :: Int
-workTime = minute * 20
+workTime = minute * 25
 
 oneSecond :: Int
 oneSecond = 1000000
