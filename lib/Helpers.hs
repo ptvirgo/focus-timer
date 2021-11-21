@@ -28,11 +28,18 @@ instance IsString Goal where
 {- CountDown Type -}
 newtype CountDown = CountDown Int
 
+countDownInt :: CountDown -> Int
+countDownInt ( CountDown x ) = x
+
 decr :: CountDown -> CountDown
-decr ( CountDown x ) = CountDown $ x - 1
+decr c = CountDown $ countDownInt c - 1
+
+overTime :: CountDown -> Bool
+overTime c = countDownInt c < 0
 
 countDownMinutes :: CountDown -> Text.Text
-countDownMinutes ( CountDown x ) = Text.pack timeLeft where
+countDownMinutes c = Text.pack timeLeft where
+    x = countDownInt c
     minutesLeft = abs x `div` minute
     minutesString =
         if x < 0 then "-" <> show minutesLeft

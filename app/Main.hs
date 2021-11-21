@@ -91,12 +91,15 @@ viewWhatsNext goal = container Box [ #orientation := OrientationVertical, #valig
 viewWorking :: Goal -> CountDown -> Widget Event
 viewWorking goal countDown = container Box [ #orientation := OrientationVertical ]
     [ widget Label [ #label := ( Text.pack . show $ goal ), classes [ "title" ] ]
-    , widget Label [ #label := countDownMinutes countDown, classes [ "timer" ] ]
+    , widget Label [ #label := countDownMinutes countDown, classes timerClasses ]
     , container Box [ #halign := AlignEnd ]
         [ widget Button [ #label := "switch", on #clicked NewGoal ]
         , widget Button [ #label := "break", on #clicked StartBreak ]
         ]
-    ]
+    ] where
+        timerClasses =
+            if overTime countDown then [ "timer", "red" ]
+                                  else [ "timer" ]
 
 viewBreaking :: CountDown -> Widget Event
 viewBreaking countDown = container Box [ #orientation := OrientationVertical ]
@@ -114,6 +117,7 @@ styles :: ByteString
 styles = mconcat
     [ ".timer { font-size: xx-large; font-family: monospace; margin: 0.25em 0 0.5em 0; }"
     , ".title { font-size: large; margin: 0.25em 0; }"
+    , ".red { background-color: #e33 }"
     , "button { margin: 0.25em 0 0 1ex; }"
     , "entry { margin-bottom: 0.75em }"
     , "window { padding: 3px; }"
