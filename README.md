@@ -2,7 +2,7 @@
 
 Minimal pomodoro-style timer.
 
-[!screenshot](screenshot.png)
+![screenshot](screenshot.png)
 
 ## Todo
 
