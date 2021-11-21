@@ -72,7 +72,7 @@ decrBreak c@(CountDown x) = Transition (Breaking . decr $ c) (return event) wher
 {- Viewers -}
 
 view' :: State -> AppView Window Event
-view' s = bin Window [ #title := "Focus Timer" , on #deleteEvent (const (True, Quit)), #widthRequest := 300, #heightRequest := 100] appState where
+view' s = bin Window [ #title := "Focus Timer" , on #deleteEvent (const (True, Quit)), #widthRequest := 300, #heightRequest := 100, #resizable := False ] appState where
     appState = case s of
         WhatsNext goal -> viewWhatsNext goal
         Working goal countDown -> viewWorking goal countDown
@@ -115,12 +115,11 @@ viewBreaking countDown = container Box [ #orientation := OrientationVertical ]
 
 styles :: ByteString
 styles = mconcat
-    [ ".timer { font-size: xx-large; font-family: monospace; margin: 0.25em 0 0.5em 0; }"
-    , ".title { font-size: large; margin: 0.25em 0; }"
+    [ ".timer { font-size: xx-large; font-family: monospace; margin: 5pt 0 10pt 0 }"
+    , ".title { font-size: large; margin: 5pt 0; }"
     , ".red { background-color: #e33 }"
-    , "button { margin: 0.25em 0 0 1ex; }"
-    , "entry { margin-bottom: 0.75em }"
-    , "window { padding: 3px; }"
+    , "button { margin: 0 5pt 5pt 5pt; }"
+    , "entry { font-size: large; margin: 5pt 5pt 10pt 5pt; }"
     ]
 
 {- Main -}
