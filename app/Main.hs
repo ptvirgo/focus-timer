@@ -5,6 +5,9 @@ module Main where
 
 import Control.Monad ( void )
 import Control.Concurrent ( threadDelay )
+import Control.Concurrent.Async ( async )
+
+import Data.ByteString ( ByteString )
 import Data.Functor ( ($>) )
 import Data.Text as Text
 import Pipes.Prelude ( repeatM )
@@ -12,14 +15,20 @@ import Pipes.Prelude ( repeatM )
 import GI.Gtk ( Box (..)
               , Button (..)
               , Entry (..)
+              , entryGetText 
+              , Grid (..)
               , Label (..)
               , Window (..)
               , Orientation (..)
+              , Align (..)
               )
 
-import GI.Gtk( entryGetText )
-import GI.Gtk.Declarative
+import qualified GI.Gdk as Gdk
+import qualified GI.Gtk as Gtk
+
+import GI.Gtk.Declarative 
 import GI.Gtk.Declarative.App.Simple
+import GI.Gtk.Declarative.Container.Grid as G
 
 import Helpers
 
@@ -63,28 +72,27 @@ decrBreak c@(CountDown x) = Transition (Breaking . decr $ c) (return event) wher
 {- Viewers -}
 
 view' :: State -> AppView Window Event
-view' s = bin Window [ #title := "Focus Timer" , on #deleteEvent (const (True, Quit)) ] appState where
+view' s = bin Window [ #title := "Focus Timer" , on #deleteEvent (const (True, Quit)), #widthRequest := 300, #heightRequest := 100] appState where
     appState = case s of
         WhatsNext goal -> viewWhatsNext goal
         Working goal countDown -> viewWorking goal countDown
         Breaking countDown -> viewBreaking countDown
 
 viewWhatsNext :: Goal -> Widget Event
-viewWhatsNext goal = container Box [ #orientation := OrientationVertical ]
-    [ widget Label [ #label := "What's next?" ]
+viewWhatsNext goal = container Box [ #orientation := OrientationVertical, #valign := AlignEnd ]
+    [ widget Label [ #label := "What's next?", classes [ "title" ] ]
     , widget Entry [ onM #changed (\evBox -> UpdateGoal . Goal <$> entryGetText evBox) ]
     , container Box
-          [ #orientation := OrientationHorizontal ]
+          [ #orientation := OrientationHorizontal, #halign := AlignEnd ]
           [ widget Button [ #label := "Start", on #clicked $ StartWorking goal ]
           ]
     ]
 
 viewWorking :: Goal -> CountDown -> Widget Event
 viewWorking goal countDown = container Box [ #orientation := OrientationVertical ]
-    [ widget Label [ #label := ( Text.pack . show $ goal )]
-    , widget Label [ #label := countDownMinutes countDown ]
-    , container Box
-        [ #orientation := OrientationHorizontal ]
+    [ widget Label [ #label := ( Text.pack . show $ goal ), classes [ "title" ] ]
+    , widget Label [ #label := countDownMinutes countDown, classes [ "timer" ] ]
+    , container Box [ #halign := AlignEnd ]
         [ widget Button [ #label := "switch", on #clicked NewGoal ]
         , widget Button [ #label := "break", on #clicked StartBreak ]
         ]
@@ -92,19 +100,42 @@ viewWorking goal countDown = container Box [ #orientation := OrientationVertical
 
 viewBreaking :: CountDown -> Widget Event
 viewBreaking countDown = container Box [ #orientation := OrientationVertical ]
-    [ widget Label [ #label := "Break" ]
-    , widget Label [ #label := countDownMinutes countDown ]
+    [ widget Label [ #label := "Break", classes [ "title" ] ]
+    , widget Label [ #label := countDownMinutes countDown, classes [ "timer" ]]
     , container Box
-        [ #orientation := OrientationHorizontal ]
+        [ #orientation := OrientationHorizontal, #halign := AlignEnd ]
         [ widget Button [ #label := "finish", on #clicked NewGoal ]
         ]
     ]
 
+{- Styling -}
+
+styles :: ByteString
+styles = mconcat
+    [ ".timer { font-size: xx-large; font-family: monospace; margin: 0.25em 0 0.5em 0; }"
+    , ".title { font-size: large; margin: 0.25em 0; }"
+    , "button { margin: 0.25em 0 0 1ex; }"
+    , "entry { margin-bottom: 0.75em }"
+    , "window { padding: 3px; }"
+    ]
+
 {- Main -}
 main :: IO ()
-main = void $ run App { view = view'
-               , update = update'
-               , inputs = [tickEverySecond]
-               , initialState = initialState'
-               }
+main = do
+    void $ Gtk.init Nothing
 
+    screen <- maybe (fail "No screen?!") return =<< Gdk.screenGetDefault
+    p <- Gtk.cssProviderNew
+    Gtk.cssProviderLoadFromData p styles
+  
+    Gtk.styleContextAddProviderForScreen
+        screen
+        p
+        (fromIntegral Gtk.STYLE_PROVIDER_PRIORITY_USER)
+
+    void . async $ do
+      void $ runLoop app
+      Gtk.mainQuit
+    Gtk.main
+    where
+        app = App { view = view' , update = update' , inputs = [tickEverySecond] , initialState = initialState' }

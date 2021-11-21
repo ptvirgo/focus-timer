@@ -39,8 +39,11 @@ executable focus-timer
     -- other-extensions:
     build-depends:
         base ^>=4.13.0.0
+        , async ^>=2.2
+        , bytestring ^>=0.10
         , pipes ^>= 4.3
         , text ^>=1.2
+        , gi-gdk ^>=3.0
         , gi-gtk ^>=3.0
         , gi-gtk-declarative ^>=0.7.1
         , gi-gtk-declarative-app-simple ^>=0.7.1
