@@ -1,7 +1,8 @@
 # Focus Timer
 
-Minimal pomodoro style timer.
+Minimal pomodoro-style timer.
 
+[!screenshot](screenshot.png)
 
 ## Todo
 
