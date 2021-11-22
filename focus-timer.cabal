@@ -1,6 +1,6 @@
 cabal-version:      2.4
 name:               focus-timer
-version:            0.1.0.0
+version:            0.2.0
 
 -- A short (one-line) description of the package.
 -- synopsis:
@@ -41,6 +41,7 @@ executable focus-timer
         base ^>=4.13.0.0
         , async ^>=2.2
         , bytestring ^>=0.10
+        , time ^>=1.9
         , pipes ^>= 4.3
         , text ^>=1.2
         , gi-gdk ^>=3.0

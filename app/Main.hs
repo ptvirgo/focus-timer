@@ -10,6 +10,8 @@ import Control.Concurrent.Async ( async )
 import Data.ByteString ( ByteString )
 import Data.Functor ( ($>) )
 import Data.Text as Text
+import Data.Time.Clock ( getCurrentTime )
+
 import Pipes.Prelude ( repeatM )
 
 import GI.Gtk ( Box (..)
@@ -45,7 +47,7 @@ initialState' = WhatsNext ""
 
 {- Events -}
 
-data Event = StartWorking Goal | UpdateGoal Goal | NewGoal | StartBreak | Tick | Quit
+data Event = StartWorking Goal | UpdateGoal Goal | Reset | StartBreak | Tick | Quit | Close
 
 tickEverySecond = repeatM $ threadDelay oneSecond $> Tick
 
@@ -53,10 +55,11 @@ tickEverySecond = repeatM $ threadDelay oneSecond $> Tick
 {- Update -}
 
 update' :: State -> Event -> Transition State Event
-update' _ (StartWorking goal) = Transition (Working goal ( CountDown workTime )) (return Nothing)
-update' _ NewGoal = Transition initialState' (return Nothing) 
-update' _ StartBreak = Transition (Breaking . CountDown $ breakTime) (return Nothing)
-update' _ Quit = Exit
+update' _ (StartWorking goal) = Transition (Working goal ( CountDown workTime)) (logAndReturn ("start working: " <> show goal) Nothing)
+update' _ Reset = Transition initialState' (logAndReturn "reset" Nothing)
+update' _ StartBreak = Transition (Breaking . CountDown $ breakTime) (logAndReturn "break" Nothing)
+update' s Quit = Transition s (logAndReturn "quit" $ Just Close)
+update' _ Close = Exit
 
 update' (WhatsNext _) (UpdateGoal goal) = Transition (WhatsNext goal) (return Nothing)
 update' (Working g c) Tick = Transition (Working g . decr $ c) (return Nothing)
@@ -67,7 +70,7 @@ update' s _ = Transition s (return Nothing)
 decrBreak :: CountDown -> Transition State Event
 decrBreak c@(CountDown x) = Transition (Breaking . decr $ c) (return event) where
     event = if x > 1 then Nothing
-                     else Just NewGoal
+                     else Just Reset
 
 {- Viewers -}
 
@@ -81,10 +84,10 @@ view' s = bin Window [ #title := "Focus Timer" , on #deleteEvent (const (True, Q
 viewWhatsNext :: Goal -> Widget Event
 viewWhatsNext goal = container Box [ #orientation := OrientationVertical, #valign := AlignEnd ]
     [ widget Label [ #label := "What's next?", classes [ "title" ] ]
-    , widget Entry [ onM #changed (\evBox -> UpdateGoal . Goal <$> entryGetText evBox) ]
+    , widget Entry [ onM #changed (\evBox -> UpdateGoal . Goal <$> entryGetText evBox), on #activate $ StartWorking goal ]
     , container Box
           [ #orientation := OrientationHorizontal, #halign := AlignEnd ]
-          [ widget Button [ #label := "Start", on #clicked $ StartWorking goal ]
+          [ widget Button [ #label := "start", on #clicked $ StartWorking goal ]
           ]
     ]
 
@@ -93,7 +96,7 @@ viewWorking goal countDown = container Box [ #orientation := OrientationVertical
     [ widget Label [ #label := ( Text.pack . show $ goal ), classes [ "title" ] ]
     , widget Label [ #label := countDownMinutes countDown, classes timerClasses ]
     , container Box [ #halign := AlignEnd ]
-        [ widget Button [ #label := "switch", on #clicked NewGoal ]
+        [ widget Button [ #label := "switch", on #clicked Reset ]
         , widget Button [ #label := "break", on #clicked StartBreak ]
         ]
     ] where
@@ -107,7 +110,7 @@ viewBreaking countDown = container Box [ #orientation := OrientationVertical ]
     , widget Label [ #label := countDownMinutes countDown, classes [ "timer" ]]
     , container Box
         [ #orientation := OrientationHorizontal, #halign := AlignEnd ]
-        [ widget Button [ #label := "finish", on #clicked NewGoal ]
+        [ widget Button [ #label := "finish", on #clicked Reset ]
         ]
     ]
 
@@ -121,6 +124,14 @@ styles = mconcat
     , "button { margin: 0 5pt 5pt 5pt; }"
     , "entry { font-size: large; margin: 5pt 5pt 10pt 5pt; }"
     ]
+
+{- Log to stdout -}
+
+logAndReturn :: String -> a -> IO a
+logAndReturn msg ret = do
+    when <- show <$> getCurrentTime
+    putStrLn $ when <> " " <> msg
+    return ret
 
 {- Main -}
 main :: IO ()
